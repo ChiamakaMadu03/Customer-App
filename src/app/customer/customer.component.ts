@@ -1,67 +1,89 @@
-import { Component, OnInit } from '@angular/core';
-import { Router } from  '@angular/router';
+import { Component, OnInit, ViewEncapsulation, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
+import { Router } from '@angular/router';
 import { ChildService } from '../services/child.service';
 import { CustomerService } from '../services/customer.service';
-import { ICustomers } from '../interface/customer';
-
-
-// export interface ICustomer {
-//   no: number;
-//   name: string;
-//   email: number;
-//   address: string;
-//   phone: string;
-// }
-
-// const CUSTOMER_DATA: ICustomer[] = [
-//   { no: 1, name: 'Hydrogen', email: 1.0079, address: 'H', phone: ''},
-//   { no: 2, name: 'Helium', email: 4.0026, address: 'He', phone: ''},
-//   { no: 3, name: 'Lithium', email: 6.941, address: 'Li', phone: ''},
-//   { no: 5, name: 'Boron', email: 10.811, address: 'B', phone: ''},
-//   { no: 6, name: 'Carbon', email: 12.0107, address: 'C', phone: ''},
-//   { no: 7, name: 'Nitrogen', email: 14.0067, address: 'N', phone: ''},
-//   { no: 8, name: 'Oxygen', email: 15.9994, address: 'O', phone: ''},
-//   { no: 9, name: 'Fluorine', email: 18.9984, address: 'F', phone: ''},
-//   { no: 10, name: 'Neon', email: 20.1797, address: 'Ne', phone: ''},
-// ];
+import { ICustomer } from '../interface/customer';
 
 @Component({
   selector: 'app-customer',
   templateUrl: './customer.component.html',
-  styleUrl: './customer.component.css'
+  styleUrls: ['./customer.component.css'],
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-
 export class CustomerComponent implements OnInit {
-  // customer: string = 'chiamaka'
-  constructor(private router: Router, private childService: ChildService, private customerService: CustomerService) {}
-  customer: string = 'Yemisi'
-  displayedColumns: string[] = ['no', 'name', 'email', 'address', 'phone']
-  dataSource! : ICustomers
-  myName !: string //without the exclamation, it'll scream that the string is not initialized
-  message: string = 'Got this message from customer componenet'
+  searchTerm: string = '';
+  displayedColumns: string[] = ['no', 'name', 'email', 'phone', 'address', 'gender', 'actions'];
+  dataSource: ICustomer[] = [];
+  filteredItems: ICustomer[] = [];
+
+  constructor(
+    private router: Router,
+    private customerService: CustomerService,
+    private changeDetectorRef: ChangeDetectorRef // Manually triggering change detection
+  ) { }
 
   ngOnInit(): void {
-    this.onGetCustomer()
-  }
-  goTo(){
-    this.router.navigateByUrl('/new-customer')
+    this.getCustomers();
+    this.appendCustomers();
   }
 
-  setName($event: string) {  //$ is to show an event driven param. //setter function
-    this.myName = $event;
+  goTo(): void {
+    this.router.navigateByUrl('/new-customer');
   }
 
-  sendName(){
-    this.childService.setName("New Name is Django")
+  goToView(element: ICustomer): void {
+    this.customerService.selectedCustomer = element
+    this.router.navigateByUrl(`/view-customer`);
   }
 
-  onGetCustomer(){
-    this.customerService.getCustomers().subscribe (
-      (data) => {
-        this.dataSource = data
-      })
+  goToEdit(element: ICustomer, id: number): void {
+    this.customerService.selectedCustomer = element
+    this.router.navigateByUrl(`/edit-customer/${id}`);
   }
- }
 
 
+  initDelete(rowIndex: number): void {
+    const customerId = this.filteredItems[rowIndex].id;
+    if (customerId) {
+      this.customerService.deleteCustomers(customerId).subscribe((data) => {
+        alert(JSON.stringify(data));
+        this.filteredItems = this.filteredItems.filter((item) => item.id !== customerId);
+        this.dataSource = this.filteredItems;
+        this.changeDetectorRef.detectChanges();  // Force change detection immediately
+      });
+    }
+  }
 
+
+  getCustomers(): void {
+    this.customerService.getCustomers().subscribe((data) => {
+      this.dataSource = data;
+      this.filteredItems = [...data];
+    });
+  }
+
+  async appendCustomers(): Promise<void> {
+    this.customerService.getData()?.subscribe((newCustomer) => {
+      if (newCustomer) {
+        this.dataSource = newCustomer;
+        this.filteredItems = newCustomer;
+        this.changeDetectorRef.markForCheck();
+      }
+    });
+  }
+
+  onSearch(): void {
+    const lowerSearchTerm = this.searchTerm.toLowerCase();
+    this.filteredItems = this.dataSource.filter((item: ICustomer) => {
+      return (
+        item.name.toLowerCase().includes(lowerSearchTerm) ||
+        item.email.toLowerCase().includes(lowerSearchTerm) ||
+        item.phone.toString().includes(lowerSearchTerm) ||
+        item.address.street.toLowerCase().includes(lowerSearchTerm) ||
+        item.gender?.toLowerCase().includes(lowerSearchTerm)
+      );
+    });
+    this.changeDetectorRef.detectChanges();
+  }
+}
