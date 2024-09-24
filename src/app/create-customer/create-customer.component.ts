@@ -35,18 +35,18 @@ export class CreateCustomerComponent implements OnInit {
     this.customerFormGroup = this.formBuilder.group({
       name: [this.pathname === 'new-customer' ? '' : data.name, [Validators.required]],
       email: [this.pathname === 'new-customer' ? '' : data.email, [Validators.required, Validators.email]],
-      phone: [this.pathname === 'new-customer' ? '' : data.phone, [Validators.required, Validators.minLength(10)]],
+      phone: [this.pathname === 'new-customer' ? '' : data.phone, [Validators.required, Validators.minLength(15)]],
       address: [this.pathname === 'new-customer' ? '' : data.address.street, [Validators.required]],
       gender: [this.pathname === 'new-customer' ? '' : data.gender, [Validators.required]]
     });
 
     if (this.pathname === 'view-customer') {
-      this.customerFormGroup.disable(); // Disable form for viewing customers
+      this.customerFormGroup.disable(); 
     }
   }
 
   goToCustomers(): void {
-    this.router.navigateByUrl('/customers');
+    this.router.navigateByUrl('/customer');
   }
 
   onCreate(): void {
