@@ -8,9 +8,9 @@ const routes: Routes = [
   path: 'customer', component: CustomerComponent
 
  },
-  // {
-  //   path : "", redirectTo:"/customer", pathMatch: "full", //
-  // },
+  {
+    path : "", redirectTo:"/customer", pathMatch: "full", //
+  },
   { path: 'new-customer', component: CreateCustomerComponent}
 
 ];
